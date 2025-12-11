@@ -116,7 +116,7 @@ class Payment:
 DATA_PRODUCTS = [
     # Data 1: Pink T-shirt
     Product(101, 1, "Pink T-shirt", 17.00, "Kaos warna pink yang lucu.", ["Pink", "Putih"], ["S", "M", "L"], 
-            "https://i.imgur.com/W2zU98S.png"), 
+            "https://cdn-img.prettylittlething.com/1/f/6/e/1f6ef32b4f56aef20f9f1d174fe42839ff392211_cmb4452_1.jpg"), 
     # Data 2: Plaid Mini Skirt
     Product(102, 2, "Rok Mini Plaid", 12.00, "Rok mini motif plaid trendi.", ["Plaid Pink", "Abu-abu"], ["XS", "S", "M"],
             "https://i.imgur.com/g0t6XkM.png"), 
