@@ -1,8 +1,5 @@
 class User:
-    """
-    Merepresentasikan pengguna aplikasi.
-    Atribut: userId (int), name (string), email (string), password (string), address (string).
-    """
+
     def _init_(self, user_id, name, email, password, address):
         self.user_id = user_id
         self.name = name
