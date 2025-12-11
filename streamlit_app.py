@@ -1,6 +1,6 @@
 # main.py - Simulasi Penggunaan Aplikasi Loope
 
-from models import User, Category, Product, CartItem, Cart, Filter, Checkout, Payment
+# from models import User, Category, Product, CartItem, Cart, Filter, Checkout, Payment
 
 # --- Data Dummy ---
 # Categories
