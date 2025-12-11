@@ -116,7 +116,7 @@ class Payment:
 DATA_PRODUCTS = [
     # Data 1: Pink T-shirt
     Product(101, 1, "Pink T-shirt", 17.00, "Kaos warna pink yang lucu.", ["Pink", "Putih"], ["S", "M", "L"], 
-            "pink : https://a.1stdibscdn.com/s-s-2004-versace-by-donatella-pink-rhinestone-dv-monogram-stretch-t-shirt-y2k-for-sale/v_23882/v_159275521657838472910/v_15927552_1657838474333_bg_processed.jpg?width=768"), 
+            "https://a.1stdibscdn.com/s-s-2004-versace-by-donatella-pink-rhinestone-dv-monogram-stretch-t-shirt-y2k-for-sale/v_23882/v_159275521657838472910/v_15927552_1657838474333_bg_processed.jpg?width=768"), 
     # Data 2: Plaid Mini Skirt
     Product(102, 2, "Rok Mini Plaid", 12.00, "Rok mini motif plaid trendi.", ["Plaid Pink", "Abu-abu"], ["XS", "S", "M"],
             "https://ae-pic-a1.aliexpress-media.com/kf/S6f367f5f24ca49c6947d9f09648306577.jpg"), 
@@ -125,7 +125,7 @@ DATA_PRODUCTS = [
             "https://static.e-stradivarius.net/assets/public/c020/4d85/37a84e3b8fab/bb62f8391d5b/08740633144-s1/08740633144-s1.jpg?ts=1753803684873&w=1082&f=auto"), 
     # Data 4: Cropped Cardi
     Product(104, 1, "Cardigan Crop", 20.00, "Cardigan rajut crop untuk OOTD.", ["Pink", "Putih"], ["S", "M"],
-            "https://static.zara.net/assets/public/14e3/1ee8/54784d109135/b4aa7444e7e3/05802105051-e1/05802105051-e1.jpg?ts=1762516679175"), 
+            "https://images-cdn.ubuy.co.in/639c1755e77a20742e0fd2f3-women-y2k-daisy-print-knit-cardigan-long.jpg"), 
     # Data 5: Grey Skirt (dibuat mirip dengan produk di gambar)
      Product(105, 2, "Rok Mini Abu", 12.00, "Rok mini kasual warna abu.", ["Abu-abu"], ["XS", "S", "M"],
             "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSz7vyx-tlCJL_ibfc4iAx2mXAS0HiGMpBmrwu-uQa50viyqe116waLY6Jg_UZZTa4Caps&usqp=CAU"), 
