@@ -200,7 +200,7 @@ def apply_custom_css():
 
 # Inisialisasi Session State
 if 'user' not in st.session_state:
-    st.session_state.user = User(5056241024, "Agni Putri", "agni@example.com", "securepwd", "Jl. Contoh No. 123")
+    st.session_state.user = User(5056241024, "Agni Putri", "agni@example.com", "securepwd", "Manajemen Bisnis")
 if 'cart_items' not in st.session_state:
     st.session_state.cart_items = [] # List CartItem
 if 'cart_obj' not in st.session_state:
