@@ -1,363 +1,417 @@
-# katalog_crud_upgrade.py - Upgrade Kasir CRUD menjadi Katalog Loopé Themed
+# katalog_loope_final.py - Aplikasi Katalog Loopé (Baby Pink Theme & Fix Cart)
 
 import streamlit as st
+import random 
+import pandas as pd
+import time # Untuk simulasi loading
 
-# --- KELAS & REPOSITORI (DIKOREKSI DAN DIUPGRADE) ---
+# --- A. DEFINISI KELAS (Mengacu pada Diagram Class PPT) ---
+
+class User:
+    def __init__(self, user_id, name, email, password, address):
+        self.user_id = user_id
+        self.name = name
+        self.email = email
+        self.password = password
+        self.address = address
+
+class Category:
+    def __init__(self, category_id, name, description=""):
+        self.category_id = category_id
+        self.name = name
+        self.description = description
 
 class Product:
-    """Merepresentasikan item dengan validasi properti."""
-    def __init__(self, name: str, price: float, image_url: str = "https://via.placeholder.com/150x150?text=LOOPÉ"):
-        # FIX: Mengganti _init_ menjadi __init__
-        self._name = None
-        self._price = None
+    def __init__(self, product_id, category_id, name, price, description="", colors=None, sizes=None, image_url=None):
+        self.product_id = product_id
+        self.category_id = category_id
         self.name = name
         self.price = price
-        self.image_url = image_url # Tambahan URL Gambar
-
-    @property
-    def name(self):
-        return self._name
-
-    @name.setter
-    def name(self, value: str):
-        if not isinstance(value, str) or value.strip() == "":
-            raise ValueError("Nama produk harus berupa string tidak kosong.")
-        self._name = value.strip()
-
-    @property
-    def price(self):
-        return self._price
-
-    @price.setter
-    def price(self, value):
-        if not (isinstance(value, (int, float)) and value >= 0):
-            raise ValueError("Harga harus angka >= 0.")
-        self._price = float(value)
-
-    def subtotal(self, qty: int):
-        return self.price * qty
-
+        self.description = description
+        self.colors = colors if colors is not None else []
+        self.sizes = sizes if sizes is not None else []
+        self.image_url = image_url if image_url else "https://via.placeholder.com/200x200?text=LOOPÉ"
+        
     def display_price(self):
-        return f"Rp {self.price:,.0f}"
+        # Menggunakan format USD karena data dummy dalam USD
+        return f"${self.price:.2f}"
 
+class CartItem:
+    def __init__(self, product_id, size, color, qty, product_price):
+        self.product_id = product_id
+        self.size = size
+        self.color = color
+        self.qty = qty
+        self.product_price = product_price 
+        self.total_price = qty * product_price 
 
 class Cart:
-    """Mengelola kumpulan item keranjang."""
-    def __init__(self):
-        # FIX: Mengganti _init_ menjadi __init__
-        # items: list of dict {'product': Product, 'qty': int}
-        self.items = []
+    def __init__(self, cart_id, user_id):
+        self.cart_id = cart_id
+        self.user_id = user_id
 
-    def add_item(self, product: Product, qty: int):
-        for it in self.items:
-            if it["product"].name == product.name:
-                it["qty"] += qty
-                return
-        self.items.append({"product": product, "qty": qty})
+    def items(self):
+        return st.session_state.cart_items
 
-    def update_item(self, product_name: str, qty: int):
-        for it in self.items:
-            if it["product"].name == product_name:
-                if qty <= 0:
-                    self.items.remove(it)
-                else:
-                    it["qty"] = qty
-                return
-
-    def remove_item(self, product_name: str):
-        self.items = [it for it in self.items if it["product"].name != product_name]
+    def add_item(self, cart_item):
+        found = False
+        for item in st.session_state.cart_items:
+            # FIX PENTING: Pengecekan harus berdasarkan ID, Size, dan Color
+            if (item.product_id == cart_item.product_id and 
+                item.size == cart_item.size and 
+                item.color == cart_item.color):
+                item.qty += cart_item.qty
+                item.total_price = item.qty * item.product_price
+                found = True
+                break
+        if not found:
+            st.session_state.cart_items.append(cart_item)
 
     def clear(self):
-        self.items = []
+        st.session_state.cart_items = []
+        
+    def calculate_total(self):
+        return sum(item.total_price for item in st.session_state.cart_items)
 
-    def total(self):
-        return sum(it["product"].subtotal(it["qty"]) for it in self.items)
+    def update_item_qty(self, product_id, size, color, new_qty):
+        
+        # Hapus item lama yang sesuai
+        st.session_state.cart_items = [
+            item for item in st.session_state.cart_items 
+            if not (item.product_id == product_id and item.size == size and item.color == color)
+        ]
+        
+        if new_qty > 0:
+            product = next(p for p in DATA_PRODUCTS if p.product_id == product_id)
+            new_item = CartItem(product_id, size, color, new_qty, product.price)
+            st.session_state.cart_items.append(new_item)
 
-    def receipt_text(self):
-        lines = []
-        for it in self.items:
-            p = it["product"]
-            q = it["qty"]
-            lines.append(f"{p.name} x{q} = Rp {p.subtotal(q):,.0f}")
-        lines.append("-" * 30)
-        lines.append(f"TOTAL = Rp {self.total():,.0f}")
-        return "\n".join(lines)
+class Filter:
+    # Filter class
+    pass
 
+class Checkout:
+    # Checkout class
+    def __init__(self, checkout_id, user_id, total_price, shipping_address):
+        self.checkout_id = checkout_id
+        self.user_id = user_id
+        self.total_price = total_price
+        self.shipping_address = shipping_address
+    def verify_order(self): return True
+    def proceed_to_payment(self, method): return Payment(payment_id=random.randint(2000, 9999), method=method)
 
-class ProductRepository:
-    """Mengelola CRUD untuk Product."""
-    def __init__(self, initial=None):
-        # FIX: Mengganti _init_ menjadi __init__
-        self._products = initial[:] if initial else []
+class Payment:
+    # Payment class
+    def __init__(self, payment_id, method, status="pending"):
+        self.payment_id = payment_id
+        self.method = method
+        self.status = status
+    def process_payment(self, total_price):
+        self.status = "paid"
+        return self.status == "paid"
 
-    def create_product(self, name: str, price: float, image_url: str = None):
-        if self.get_by_name(name) is not None:
-            raise ValueError("Produk dengan nama sama sudah ada.")
-        p = Product(name, price, image_url)
-        self._products.append(p)
-        return p
+# --- B. DATA DUMMY (Sesuai Gambar PPT) ---
+# Menggunakan link gambar agar sesuai dengan tema Loopé
 
-    def get_all(self):
-        return list(self._products)
-
-    def get_by_name(self, name: str):
-        for p in self._products:
-            if p.name == name:
-                return p
-        return None
-
-    def update_product(self, old_name: str, new_name: str = None, new_price: float = None):
-        p = self.get_by_name(old_name)
-        if p is None:
-            raise ValueError("Produk tidak ditemukan.")
-        if new_name and new_name != old_name and self.get_by_name(new_name):
-            raise ValueError("Nama baru sudah digunakan produk lain.")
-        if new_name:
-            p.name = new_name
-        if new_price is not None:
-            p.price = new_price
-        return p
-
-    def delete_product(self, name: str):
-        p = self.get_by_name(name)
-        if p is None:
-            raise ValueError("Produk tidak ditemukan.")
-        self._products.remove(p)
-
-
-# --- DATA AWAL (Upgrade untuk Tema Loopé) ---
-# Menggunakan harga yang lebih kecil dan gambar yang relevan
-
-default_catalog = [
-    Product("Pink T-shirt", 17.00, "https://i.imgur.com/W2zU98S.png"), 
-    Product("Rok Mini Plaid", 12.00, "https://i.imgur.com/g0t6XkM.png"), 
-    Product("Black Tank Top", 18.00, "https://i.imgur.com/vHqP4Yn.png"),
-    Product("Jogger Pants", 35.00, "https://i.imgur.com/7b58UoJ.png"),
+DATA_PRODUCTS = [
+    # Data 1: Pink T-shirt
+    Product(101, 1, "Pink T-shirt", 17.00, "Kaos warna pink yang lucu.", ["Pink", "Putih"], ["S", "M", "L"], 
+            "https://i.imgur.com/W2zU98S.png"), 
+    # Data 2: Plaid Mini Skirt
+    Product(102, 2, "Rok Mini Plaid", 12.00, "Rok mini motif plaid trendi.", ["Plaid Pink", "Abu-abu"], ["XS", "S", "M"],
+            "https://i.imgur.com/g0t6XkM.png"), 
+    # Data 3: Black Tank Top (diganti ke Jogger Pants Pink untuk variasi)
+    Product(103, 2, "Jogger Pants Pink", 35.00, "Celana jogger super nyaman.", ["Pink", "Hitam"], ["L", "XL"],
+            "https://i.imgur.com/7b58UoJ.png"), 
+    # Data 4: Cropped Cardi
+    Product(104, 1, "Cardigan Crop", 20.00, "Cardigan rajut crop untuk OOTD.", ["Pink", "Putih"], ["S", "M"],
+            "https://i.imgur.com/T0yD7E1.png"), 
+    # Data 5: Grey Skirt (dibuat mirip dengan produk di gambar)
+     Product(105, 2, "Rok Mini Abu", 12.00, "Rok mini kasual warna abu.", ["Abu-abu"], ["XS", "S", "M"],
+            "https://i.imgur.com/7d5b8yY.png"), 
 ]
 
+DATA_CATEGORIES = [
+    Category(1, "Atasan", "Pakaian bagian atas"),
+    Category(2, "Bawahan", "Pakaian bagian bawah"),
+]
 
-# --- THEME DAN STYLE (CSS Injection untuk Warna Loopé) ---
+# --- C. THEME DAN STYLE (Baby Pink) ---
 
 def apply_custom_css():
-    """Mengatur tema warna (Pink/Magenta Loopé) pada tombol utama."""
+    """Mengatur tema warna ke Baby Pink/Soft Magenta."""
     st.markdown(f"""
         <style>
-            /* Mengubah warna tombol utama menjadi pink/magenta */
-            .stButton>button {{
-                background-color: #F04D9D;
+            /* Warna Dasar: Baby Pink/Soft Magenta */
+            :root {{
+                --loop-pink: #FF99CC; 
+                --loop-pink-dark: #F04D9D;
+                --loop-purple: #E0B0FF;
+            }}
+            /* Sidebar background */
+            [data-testid="stSidebar"] {{
+                background-color: var(--loop-pink);
+            }}
+            /* Mengubah warna tombol utama (primary) */
+            .stButton > button {{
+                background-color: var(--loop-pink-dark);
                 color: white;
                 border-radius: 8px;
-                border: 1px solid #F04D9D;
+                border: 1px solid var(--loop-pink-dark);
             }}
-            .stButton>button:hover {{
-                background-color: #FF66A3;
+            .stButton > button:hover {{
+                background-color: var(--loop-pink);
+                border: 1px solid var(--loop-pink-dark);
                 color: white;
             }}
-            /* Mengubah warna form submit */
-            .st-emotion-cache-1jicfl2 {{ 
-                background-color: #F04D9D !important;
+            /* Mengubah warna form submit button */
+            .st-emotion-cache-1jicfl2 {{
+                background-color: var(--loop-pink-dark) !important;
                 color: white !important;
             }}
+            /* Custom Header/Brand Area */
+            .loop-header {{
+                background-color: var(--loop-pink-dark);
+                padding: 15px;
+                border-radius: 5px;
+                margin-bottom: 20px;
+            }}
+            .loop-header h1 {{
+                color: white;
+                text-align: center;
+                margin: 0;
+            }}
+            /* Custom text color for headings */
             h1, h2, h3, h4 {{
-                color: #B53F77; /* Warna judul mendekati pink */
+                color: #A03370; /* Deep Pink/Maroon for contrast */
+            }}
+            /* Cart button in header */
+            .header-cart-btn button {{
+                background-color: var(--loop-purple) !important;
+                border-color: var(--loop-purple) !important;
+                font-weight: bold;
+                color: black !important;
             }}
         </style>
     """, unsafe_allow_html=True)
 
 
-# --- STREAMLIT UI (Full Bahasa Indonesia) ---
+# --- D. FUNGSI LOGIKA & SESI STREAMLIT ---
 
-# Terapkan CSS custom
-apply_custom_css()
+# Inisialisasi Session State
+if 'user' not in st.session_state:
+    st.session_state.user = User(5056241024, "Agni Putri", "agni@example.com", "securepwd", "Jl. Contoh No. 123")
+if 'cart_items' not in st.session_state:
+    st.session_state.cart_items = [] # List CartItem
+if 'cart_obj' not in st.session_state:
+    st.session_state.cart_obj = Cart(cart_id=1, user_id=st.session_state.user.user_id)
+if 'page' not in st.session_state:
+    st.session_state.page = 'katalog' 
 
-st.markdown(f'<div style="background-color: #F04D9D; padding: 10px; border-radius: 5px;"><h1 style="color: white; text-align: center;">KATALOG & KASIR LOOPÉ</h1></div>', unsafe_allow_html=True)
-st.subheader("Sistem Pengelolaan Produk dan Keranjang")
+def set_page(page_name):
+    st.session_state.page = page_name
 
-# Initialize repo and cart di session state
-if "repo" not in st.session_state:
-    st.session_state.repo = ProductRepository(initial=default_catalog)
-if "cart" not in st.session_state:
-    st.session_state.cart = Cart()
-if 'unique_key_counter' not in st.session_state:
-    st.session_state.unique_key_counter = 0
+def add_to_cart_callback(product_id, size, color, qty=1):
+    product = next(p for p in DATA_PRODUCTS if p.product_id == product_id)
+    cart_item = CartItem(
+        product_id=product.product_id,
+        size=size,
+        color=color,
+        qty=qty,
+        product_price=product.price
+    )
+    st.session_state.cart_obj.add_item(cart_item)
+    st.toast(f"✅ Item ditambahkan: {product.name} ({color}, {size})")
+    # Tidak perlu rerun, toast sudah cukup.
 
-def get_unique_key():
-    """Menghasilkan kunci unik untuk tombol/widget agar Streamlit tidak crash."""
-    st.session_state.unique_key_counter += 1
-    return f"key_{st.session_state.unique_key_counter}"
+# --- E. FUNGSI TAMPILAN Halaman ---
 
-
-# --- TAB UTAMA: KATALOG & KERANJANG ---
-tab_katalog, tab_cart, tab_crud = st.tabs(["🛍️ Katalog Produk", "🛒 Keranjang Belanja", "⚙️ Kelola CRUD"])
-
-
-# --- 1. TAB KATALOG PRODUK ---
-with tab_katalog:
-    st.header("Katalog Produk")
-    st.markdown("Pilih produk di bawah ini dan masukkan ke keranjang.")
+def display_header():
+    """Menampilkan Header (Judul 'Loope') dan Tombol Cart/Checkout."""
+    st.markdown('<div class="loop-header"><h1>LOOPÉ</h1></div>', unsafe_allow_html=True)
     
-    products = st.session_state.repo.get_all()
-    
-    # Tampilkan Produk dalam grid 3 kolom
-    cols = st.columns(3)
-    
-    if not products:
-        st.info("Belum ada produk di katalog.")
-    
-    for i, p in enumerate(products):
-        with cols[i % 3]:
-            with st.container(border=True):
-                st.image(p.image_url, caption=p.name, width=150)
-                st.markdown(f"**{p.name}**")
-                st.markdown(f"Harga: **{p.display_price()}**")
+    col1, col2 = st.columns([5, 1])
+    with col2:
+        cart_total = st.session_state.cart_obj.calculate_total()
+        st.markdown('<div class="header-cart-btn">', unsafe_allow_html=True)
+        st.button(
+            f"🛒 Checkout (${cart_total:.2f})",
+            on_click=set_page,
+            args=('checkout',),
+            key="header_cart_button"
+        )
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.divider()
 
-                col_sel, col_btn = st.columns([1, 1])
-                
-                with col_sel:
-                    qty = st.number_input("Jumlah", min_value=1, value=1, step=1, key=f"qty_sel_{p.name}")
-                
-                with col_btn:
-                    # Tombol Tambah ke Keranjang
-                    if st.button("Tambah", key=f"add_{p.name}", use_container_width=True):
-                        st.session_state.cart.add_item(p, qty)
-                        st.success(f"'{p.name}' x{qty} ditambahkan ke keranjang.")
-
-# --- 2. TAB KERANJANG BELANJA ---
-with tab_cart:
-    st.header("Keranjang Belanja")
-    
-    if not st.session_state.cart.items:
-        st.info("Keranjang masih kosong.")
-    else:
-        st.subheader("Isi Keranjang Saat Ini")
+def display_product_card(product):
+    """Menampilkan satu produk dalam format card (mirip gambar)."""
+    with st.container(border=True):
+        st.image(product.image_url, caption=f"ID: {product.product_id}", width=150)
         
-        # Tampilkan dalam format tabel/dataframe
+        # Nama dan Harga di kolom terpisah
+        col_name, col_price = st.columns([2, 1])
+        with col_name:
+            st.markdown(f"**{product.name}**")
+        with col_price:
+            st.markdown(f"**{product.display_price()}**")
+
+        st.markdown(f"_{product.description[:20]}..._")
+        
+        # Pilihan Variasi
+        key_base = f"prod_{product.product_id}"
+        col_s, col_c = st.columns(2)
+        with col_s:
+            selected_size = st.selectbox("Ukuran", product.sizes, key=f"size_{key_base}")
+        with col_c:
+            selected_color = st.selectbox("Warna", product.colors, key=f"color_{key_base}")
+
+        # Tombol Add to Cart
+        st.button(
+            "Tambah ke Keranjang",
+            key=f"add_{key_base}",
+            on_click=add_to_cart_callback,
+            args=(product.product_id, selected_size, selected_color, 1),
+            use_container_width=True
+        )
+
+def page_katalog():
+    """Halaman utama katalog dengan Filter dan Grid Produk."""
+    display_header()
+    
+    # Sidebar untuk Filter
+    with st.sidebar:
+        st.header("Saring")
+        st.info(f"Halo, {st.session_state.user.name}!")
+        
+        # Filter (hanya untuk tampilan, karena kode di PPT tidak detail)
+        category_map = {c.name: c.category_id for c in DATA_CATEGORIES}
+        selected_category_name = st.selectbox("Kategori", list(category_map.keys()))
+        
+        # Jika Anda ingin menambahkan filter, masukkan logikanya di sini
+
+    st.subheader("TRENDING NOW") 
+    st.info(f"Menampilkan item di kategori: **{selected_category_name}**")
+    
+    products_in_category = [p for p in DATA_PRODUCTS if p.category_id == category_map[selected_category_name]]
+    # Filter diterapkan di sini (saat ini hanya filter kategori)
+
+    cols = st.columns(3) # Tampilkan 3 kolom produk
+    for i, product in enumerate(products_in_category):
+        with cols[i % 3]:
+            display_product_card(product)
+
+def page_checkout():
+    """Halaman Checkout dan Pembayaran."""
+    st.title("💸 Keranjang & Pembayaran")
+    
+    cart_items = st.session_state.cart_obj.items()
+    total_price = st.session_state.cart_obj.calculate_total()
+
+    if not cart_items:
+        st.warning("Keranjang belanja Anda kosong. Tambahkan item di halaman katalog.")
+        st.button("⬅️ Kembali ke Katalog", on_click=set_page, args=('katalog',), key="back_from_empty")
+        return
+
+    col_cart, col_summary = st.columns([2, 1])
+
+    with col_cart:
+        st.subheader("Item di Keranjang")
+        
         cart_data = []
-        for it in st.session_state.cart.items:
-            p = it["product"]
-            q = it["qty"]
+        for item in cart_items:
+            product = next((p for p in DATA_PRODUCTS if p.product_id == item.product_id), None)
+            key = f"{item.product_id}-{item.size}-{item.color}" 
             cart_data.append({
-                "Nama Produk": p.name,
-                "Harga Satuan": p.display_price(),
-                "Jumlah (Qty)": q,
-                "Subtotal": f"Rp {p.subtotal(q):,.0f}"
+                "Nama Produk": product.name if product else "N/A",
+                "Variasi": f"{item.color} ({item.size})",
+                "Harga Satuan": item.product_price,
+                "Qty": item.qty,
+                "Subtotal": item.total_price,
+                "Key": key
             })
         
         df_cart = pd.DataFrame(cart_data)
-        st.dataframe(df_cart, hide_index=True, use_container_width=True)
+        df_cart['Harga Satuan'] = df_cart['Harga Satuan'].apply(lambda x: f"${x:.2f}")
+        df_cart['Subtotal'] = df_cart['Subtotal'].apply(lambda x: f"${x:.2f}")
 
-        st.metric("TOTAL PEMBAYARAN", f"Rp {st.session_state.cart.total():,.0f}")
-        
-        # Form untuk Mengelola Keranjang (Update/Hapus)
+        st.dataframe(df_cart[['Nama Produk', 'Variasi', 'Harga Satuan', 'Qty', 'Subtotal']], hide_index=True, use_container_width=True)
+
         st.divider()
-        st.subheader("Kelola Item")
+        st.subheader("Kelola Jumlah Item")
         
-        item_names = [it["product"].name for it in st.session_state.cart.items]
-        
-        if item_names:
-            sel_item_name = st.selectbox("Pilih Produk", item_names, key="cart_sel_edit")
-            current_qty = next(it["qty"] for it in st.session_state.cart.items if it["product"].name == sel_item_name)
+        item_keys = [item['Key'] for item in cart_data]
+        if item_keys:
+            # Menggunakan format_func untuk menampilkan nama produk + variasi
+            selected_key = st.selectbox("Pilih Item", item_keys, 
+                                        format_func=lambda k: next(d['Nama Produk'] + " " + d['Variasi'] for d in cart_data if d['Key'] == k), 
+                                        key="checkout_sel_item")
             
-            col_uq, col_ub = st.columns(2)
-            with col_uq:
-                upd_qty = st.number_input("Jumlah Baru (0 untuk Hapus)", min_value=0, value=current_qty, step=1, key="cart_upd_qty")
+            selected_data = next(d for d in cart_data if d['Key'] == selected_key)
             
-            with col_ub:
-                st.markdown("<br>", unsafe_allow_html=True) # Jarak agar tombol sejajar
-                if st.button("Perbarui Item", key="cart_update_btn", use_container_width=True):
-                    st.session_state.cart.update_item(sel_item_name, int(upd_qty))
-                    st.success(f"Jumlah '{sel_item_name}' diperbarui.")
+            p_id, size, color = selected_key.split('-')
+            p_id = int(p_id)
+            
+            col_u1, col_u2 = st.columns(2)
+            with col_u1:
+                new_qty = st.number_input("Jumlah Baru (0 untuk Hapus)", min_value=0, value=selected_data['Qty'], step=1, key="checkout_qty")
+            
+            with col_u2:
+                st.markdown("<br>", unsafe_allow_html=True)
+                if st.button("Perbarui Item", key="checkout_update_btn", use_container_width=True):
+                    st.session_state.cart_obj.update_item_qty(p_id, size, color, new_qty)
+                    st.toast("Keranjang diperbarui!")
                     st.experimental_rerun()
+            
+    with col_summary:
+        st.subheader("Ringkasan Pesanan")
+        shipping_address = st.session_state.user.address
         
+        st.metric("Total Pembayaran", f"${total_price:.2f}")
+        st.info(f"Dikirim ke: {shipping_address}")
+
         st.divider()
+        st.subheader("Pembayaran")
+        payment_method = st.selectbox("Pilih Metode", ["Transfer Bank", "E-Wallet", "Kartu Kredit"])
         
-        col_reset, col_nota = st.columns(2)
-        with col_reset:
-            if st.button("Reset Keranjang", type="secondary"):
-                st.session_state.cart.clear()
-                st.warning("Keranjang direset!")
-                st.experimental_rerun()
-        with col_nota:
-            if st.button("Tampilkan Nota Pembelian", type="primary"):
-                st.text("NOTA PEMBELIAN:")
-                st.code(st.session_state.cart.receipt_text())
+        if st.button("Konfirmasi Pesanan & Bayar", use_container_width=True, type="primary"):
+            # Simulasi Proses Pembayaran
+            with st.spinner('Memproses pembayaran...'):
+                time.sleep(1) 
+            
+            checkout_obj = Checkout(random.randint(1000, 9999), st.session_state.user.user_id, total_price, shipping_address)
+            if checkout_obj.verify_order():
+                payment_obj = checkout_obj.proceed_to_payment(payment_method)
+                
+                if payment_obj.process_payment(total_price):
+                    st.session_state.cart_obj.clear() 
+                    set_page('success')
+                else:
+                    st.error("Gagal memproses pembayaran. Coba lagi.")
+            st.rerun()
 
-# --- 3. TAB PENGELOLAAN CRUD PRODUK ---
-with tab_crud:
-    st.header("⚙️ Pengelolaan Produk (CRUD)")
-    
-    st.subheader("Daftar Produk Saat Ini")
-    products_list = st.session_state.repo.get_all()
-    
-    if products_list:
-        data_table = [{
-            "Nama": p.name, 
-            "Harga": p.display_price(), 
-            "URL Gambar": p.image_url
-        } for p in products_list]
-        st.dataframe(pd.DataFrame(data_table), hide_index=True, use_container_width=True)
-    else:
-        st.info("Tidak ada produk di repositori.")
+    if st.button("⬅️ Kembali ke Katalog"):
+        set_page('katalog')
+        st.rerun()
 
-    st.divider()
+def page_success():
+    """Halaman Konfirmasi Sukses."""
+    st.title("✅ PESANAN BERHASIL!")
+    st.balloons()
+    st.success(f"Terima kasih, {st.session_state.user.name}. Pembayaran Anda sudah dikonfirmasi.")
+    st.info("Anda akan diarahkan kembali ke katalog.")
+    if st.button("Mulai Belanja Lagi", type="primary"):
+        set_page('katalog')
+        st.experimental_rerun()
 
-    # Form Tambah Produk (Create)
-    with st.form("form_add_crud"):
-        st.subheader("Tambah Produk Baru")
-        new_name = st.text_input("Nama produk", key="crud_add_name")
-        new_price = st.number_input(
-            "Harga (Rp)", min_value=0, value=10000, step=5000, key="crud_add_price"
-        )
-        new_image = st.text_input("URL Gambar (Opsional)", key="crud_add_image")
-        submitted = st.form_submit_button("Tambah Produk Baru", type="primary")
-        
-        if submitted:
-            try:
-                st.session_state.repo.create_product(new_name, new_price, new_image)
-                st.success(f"Produk '{new_name}' berhasil ditambahkan.")
-                st.experimental_rerun()
-            except Exception as e:
-                st.error(f"Gagal menambahkan produk: {str(e)}")
+# --- F. LOGIKA NAVIGASI UTAMA ---
+def main():
+    apply_custom_css()
+    if st.session_state.page == 'katalog':
+        page_katalog()
+    elif st.session_state.page == 'checkout':
+        page_checkout()
+    elif st.session_state.page == 'success':
+        page_success()
 
-    st.divider()
-
-    # Form Update / Delete Produk
-    st.subheader("Edit / Hapus Produk")
-    product_names = [p.name for p in products_list]
-    
-    if product_names:
-        sel = st.selectbox("Pilih produk yang ingin diedit/dihapus", product_names, key="crud_sel_edit")
-        p_edit = st.session_state.repo.get_by_name(sel)
-        
-        col1, col2 = st.columns(2)
-        with col1:
-            upd_name = st.text_input("Nama baru", value=p_edit.name, key="crud_upd_name")
-        with col2:
-            upd_price = st.number_input(
-                "Harga baru", min_value=0, value=int(p_edit.price), step=5000, key="crud_upd_price"
-            )
-        upd_image = st.text_input("URL Gambar baru", value=p_edit.image_url, key="crud_upd_image")
-
-        if st.button("Simpan Perubahan", key="crud_save_btn", type="primary"):
-            try:
-                st.session_state.repo.update_product(
-                    p_edit.name, new_name=upd_name, new_price=upd_price
-                )
-                # Update URL gambar secara manual (karena setter/getter tidak mencakup ini di kode Anda)
-                p_edit.image_url = upd_image
-                st.success("Produk berhasil diperbarui.")
-                st.experimental_rerun()
-            except Exception as e:
-                st.error(f"Gagal menyimpan perubahan: {str(e)}")
-        
-        if st.button("Hapus Produk Ini", key="crud_delete_btn"):
-            try:
-                st.session_state.repo.delete_product(p_edit.name)
-                # Hapus dari keranjang juga
-                st.session_state.cart.remove_item(p_edit.name)
-                st.warning(f"Produk '{p_edit.name}' telah dihapus.")
-                st.experimental_rerun()
-            except Exception as e:
-                st.error(f"Gagal menghapus produk: {str(e)}")
-    else:
-        st.info("Tidak ada produk untuk diedit/dihapus.")
+if __name__ == "__main__":
+    main()
