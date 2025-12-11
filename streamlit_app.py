@@ -1,114 +1,223 @@
-# main.py - Simulasi Penggunaan Aplikasi Loope
+class User:
+    """
+    Merepresentasikan pengguna aplikasi.
+    Atribut: userId (int), name (string), email (string), password (string), address (string).
+    """
+    def _init_(self, user_id, name, email, password, address):
+        self.user_id = user_id
+        self.name = name
+        self.email = email
+        self.password = password  
+        self.address = address
 
-# from models import User, Category, Product, CartItem, Cart, Filter, Checkout, Payment
+    # Operasi (Methods)
+    def login(self, entered_password):
+        """Simulasi login."""
+        return self.password == entered_password
 
-# --- Data Dummy ---
-# Categories
-CAT_T = Category(1, "Tops", "Pakaian atasan")
-CAT_B = Category(2, "Bottoms", "Pakaian bawahan")
+    def update_profile(self, new_address):
+        """Memperbarui alamat pengguna."""
+        self.address = new_address
+        print(f"Profile updated. New address: {self.address}")
+        
+    def select_category(self, category_name):
+        """Simulasi memilih kategori."""
+        print(f"User selected category: {category_name}")
+        return category_name
+        
+    def apply_filter(self, filter_obj):
+        """Simulasi menerapkan filter."""
+        print("User applied a filter.")
+        # Diimplementasikan lebih lanjut di Class Filter.
 
-# Products
-PRODUCT_DATA = [
-    Product(101, 1, "Pink T-shirt", 17.00, "So fetch!", ["Pink", "White"], ["S", "M", "L"]), 
-    Product(102, 2, "Plaid Mini Skirt", 12.00, "Trending Now", ["Pink Plaid", "Grey"], ["XS", "S", "M"]),
-    Product(103, 1, "Black Tank Top", 18.00, "Sparkly tank top", ["Black", "Silver"], ["S", "M"]),
-    Product(104, 2, "Blue Jeans", 30.00, "Classic denim", ["Blue", "Dark Blue"], ["S", "M", "L"]),
-]
+    def add_to_cart(self, product_id, size, color, qty):
+        """Simulasi menambahkan produk ke keranjang."""
+        print(f"Product {product_id} added to cart.")
+        # Logika nyata memerlukan interaksi dengan objek Cart.
 
-# User
-agni = User(5056241024, "Agni Putri", "agni@example.com", "securepwd", "Jl. Contoh No. 123") 
-# Keranjang belanja dibuat saat user login atau pertama kali mengakses
-user_cart = Cart(cart_id=1, user_id=agni.user_id) 
+    def checkout(self):
+        """Memulai proses checkout."""
+        print("Initiating checkout process.")
+        # Logika nyata akan membuat objek Checkout.
 
-# =========================================================
-print("=========================================")
-print("SIMULASI APLIKASI LOOPÉ (Katalog & Transaksi)")
-print("=========================================\n")
-
-
-# --- STEP 1: LOGIN dan EXPLORE ---
-print("## STEP 1: LOGIN & KATEGORI ##")
-if agni.login("securepwd"):
-    print(f"1. Login berhasil untuk: {agni.name}")
-    
-    # User memilih kategori 'Tops'
-    selected_category_name = agni.select_category(CAT_T.name)
-    
-    # Mendapatkan produk di kategori tersebut
-    products_in_category = CAT_T.get_products(PRODUCT_DATA)
-    print(f"2. Produk di kategori {selected_category_name}: {len(products_in_category)} item.")
-    print(f"   Contoh Produk: {products_in_category[0].name}")
-    
-    # Melihat detail produk
-    print("\n3. Detail Produk 104 (Blue Jeans):")
-    details = PRODUCT_DATA[3].get_detail()
-    for key, value in details.items():
-        print(f"   - {key}: {value}")
-else:
-    print("Login Gagal.")
-    exit()
-
-print("\n" + "="*30 + "\n")
+    def confirm_payment(self):
+        """Konfirmasi pembayaran pesanan."""
+        print("Payment confirmed.")
+        # Logika nyata akan berinteraksi dengan objek Payment.
 
 
-# --- STEP 2: FILTERING ---
-print("## STEP 2: FILTERING ##")
-# Membuat Filter: Harga Max $20.00, Warna Pink
-my_filter = Filter(color="Pink", max_price=20.00)
+class Category:
+    """
+    Merepresentasikan kategori produk.
+    Atribut: categoryId (int), name (string), description (string).
+    """
+    def _init_(self, category_id, name, description=""):
+        self.category_id = category_id
+        self.name = name
+        self.description = description
 
-# Menerapkan filter ke semua produk
-filtered_items = my_filter.apply(PRODUCT_DATA)
-
-print(f"1. Filter diterapkan (Warna: Pink, Harga Max: $20.00)")
-print(f"2. Ditemukan {len(filtered_items)} Produk:")
-for p in filtered_items:
-    print(f"   - ID {p.product_id}: {p.name} (${p.price:.2f})")
-
-print("\n" + "="*30 + "\n")
-
-
-# --- STEP 3: ADD TO CART ---
-print("## STEP 3: ADD TO CART ##")
-# Product 101 (Pink T-shirt): Qty 1, Size M, Color Pink
-item1 = CartItem(PRODUCT_DATA[0].product_id, "M", "Pink", 1, PRODUCT_DATA[0].price)
-
-# Product 103 (Black Tank Top): Qty 2, Size S, Color Black
-item2 = CartItem(PRODUCT_DATA[2].product_id, "S", "Black", 2, PRODUCT_DATA[2].price)
-
-user_cart.add_item(item1)
-agni.add_to_cart(PRODUCT_DATA[0].product_id, "M", "Pink", 1) # Simulasi method User
-user_cart.add_item(item2)
-
-print("\n1. Isi Keranjang Saat Ini:")
-for item in user_cart.items():
-    print(f"   -> {item}")
-    
-total_price = user_cart.calculate_total()
-print(f"2. Total Harga Keranjang: ${total_price:.2f}")
-
-print("\n" + "="*30 + "\n")
+    def get_products(self, all_products):
+        """Mengambil produk dalam kategori ini dari daftar semua produk."""
+        return [p for p in all_products if getattr(p, 'category_id', None) == self.category_id]
 
 
-# --- STEP 4: CHECKOUT & PAYMENT ---
-print("## STEP 4: CHECKOUT & PAYMENT ##")
-agni.checkout() 
+class Product:
+    """
+    Merepresentasikan item fashion dalam katalog.
+    Atribut: productId (int), name (string), price (float), description (string), colors (list<string>), sizes (list<string>), images (list<string>).
+    """
+    def _init_(self, product_id, category_id, name, price, description="", colors=None, sizes=None, images=None):
+        self.product_id = product_id
+        self.category_id = category_id  
+        self.name = name
+        self.price = price
+        self.description = description
+        self.colors = colors if colors is not None else []
+        self.sizes = sizes if sizes is not None else []
+        self.images = images if images is not None else []
 
-checkout_obj = Checkout(
-    checkout_id=1001, 
-    user_id=agni.user_id, 
-    total_price=total_price, 
-    shipping_address=agni.address
-)
+    def get_detail(self):
+        """Mengembalikan detail lengkap produk."""
+        return {
+            "ID": self.product_id,
+            "Nama": self.name,
+            "Harga": f"${self.price:.2f}",
+            "Deskripsi": self.description,
+            "Warna Tersedia": ", ".join(self.colors),
+            "Ukuran Tersedia": ", ".join(self.sizes)
+        }
 
-if checkout_obj.verify_order():
-    payment_obj = checkout_obj.proceed_to_payment()
-    
-    # Proses Pembayaran
-    if payment_obj.process_payment(total_price):
-        # Konfirmasi oleh User (Simulasi)
-        if agni.confirm_payment() and payment_obj.confirm_payment():
-            print("\n✅ PEMBAYARAN SUKSES! Pesanan Anda sedang diproses.")
-        else:
-            print("❌ Konfirmasi Pembayaran Gagal.")
-    else:
-        print("❌ Pemrosesan Pembayaran Gagal.")
+    def is_available(self, size, color):
+        """Memeriksa ketersediaan produk dalam ukuran dan warna tertentu."""
+        return size in self.sizes and color in self.colors
+
+
+class CartItem:
+    """
+    Merepresentasikan satu produk dalam keranjang, termasuk variasi dan jumlahnya.
+    Atribut: productId (int), size (string), color (string), qty (int), totalPrice (float).
+    """
+    def _init_(self, product_id, size, color, qty, product_price):
+        self.product_id = product_id
+        self.size = size
+        self.color = color
+        self.qty = qty
+        self.total_price = qty * product_price 
+
+    def _str_(self):
+        return f"{self.qty}x Product ID {self.product_id} ({self.color}/{self.size}) - Subtotal: ${self.total_price:.2f}"
+
+
+class Cart:
+    """
+    Menyimpan kumpulan item (CartItem) yang dipilih pengguna.
+    Atribut: cartId (int), userId (int).
+    """
+    def _init_(self, cart_id, user_id):
+        self.cart_id = cart_id
+        self.user_id = user_id
+        self._items = []  # list<CartItem>
+
+    # Operasi (Methods)
+    def items(self):
+        """Mengembalikan daftar item dalam keranjang."""
+        return self._items
+
+    def add_item(self, cart_item):
+        """Menambahkan item ke keranjang."""
+        self._items.append(cart_item)
+
+    def update_item(self, product_id, new_qty):
+        """Memperbarui kuantitas item."""
+        for item in self._items:
+            if item.product_id == product_id:
+                # Perlu logika untuk menghitung ulang totalPrice
+                item.qty = new_qty
+                # Logika update price di sini...
+                return True
+        return False
+
+    def remove_item(self, product_id):
+        """Menghapus item dari keranjang."""
+        self._items = [item for item in self._items if item.product_id != product_id]
+
+    def clear(self):
+        """Mengosongkan keranjang."""
+        self._items = []
+        
+    def calculate_total(self):
+        """Menghitung total harga keranjang."""
+        return sum(item.total_price for item in self._items)
+
+
+class Filter:
+    """
+    Menyediakan filter untuk menyaring produk berdasarkan kriteria.
+    Atribut: size (string), color (string), minPrice (float), maxPrice (float).
+    """
+    def _init_(self, size=None, color=None, min_price=None, max_price=None):
+        self.size = size
+        self.color = color
+        self.min_price = min_price
+        self.max_price = max_price
+
+    def apply(self, products):
+        """Menerapkan filter ke daftar produk."""
+        filtered_products = products
+        
+        if self.size:
+            filtered_products = [p for p in filtered_products if self.size in p.sizes]
+        if self.color:
+            filtered_products = [p for p in filtered_products if self.color in p.colors]
+        if self.min_price is not None:
+            filtered_products = [p for p in filtered_products if p.price >= self.min_price]
+        if self.max_price is not None:
+            filtered_products = [p for p in filtered_products if p.price <= self.max_price]
+            
+        return filtered_products
+
+
+class Checkout:
+    """
+    Mewakili proses pengecekan sebelum pembayaran.
+    Atribut: checkoutId (int), userId (int), totalPrice (float), shippingAddress (string).
+    """
+    def _init_(self, checkout_id, user_id, total_price, shipping_address):
+        self.checkout_id = checkout_id
+        self.user_id = user_id
+        self.total_price = total_price
+        self.shipping_address = shipping_address
+
+    def verify_order(self):
+        """Verifikasi apakah pesanan sudah benar."""
+        print(f"Verifying order for user {self.user_id}...")
+        return True
+
+    def proceed_to_payment(self):
+        """Melanjutkan ke proses pembayaran."""
+        print("Proceeding to payment gateway...")
+        # Mengembalikan objek Payment baru
+        return Payment(payment_id=1, method="Credit Card")
+
+
+class Payment:
+    """
+    Menangani proses pembayaran.
+    Atribut: paymentId (int), method (string), status (string).
+    """
+    def _init_(self, payment_id, method, status="pending"):
+        self.payment_id = payment_id
+        self.method = method
+        self.status = status
+
+    def process_payment(self, total_price):
+        """Memproses transaksi pembayaran."""
+        print(f"Processing payment of ${total_price:.2f} using {self.method}...")
+        self.status = "paid"
+        print(f"Payment status updated to: {self.status}")
+        return self.status == "paid"
+
+    def confirm_payment(self):
+        """Konfirmasi status pembayaran."""
+        print(f"Confirming payment status: {self.status}")
+        return self.status == "paid"
