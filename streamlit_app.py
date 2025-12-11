@@ -116,19 +116,19 @@ class Payment:
 DATA_PRODUCTS = [
     # Data 1: Pink T-shirt
     Product(101, 1, "Pink T-shirt", 17.00, "Kaos warna pink yang lucu.", ["Pink", "Putih"], ["S", "M", "L"], 
-            "https://pin.it/44NiKuhVx"), 
+            "pink : https://share.google/lDTH1gxesKBbAhhex"), 
     # Data 2: Plaid Mini Skirt
     Product(102, 2, "Rok Mini Plaid", 12.00, "Rok mini motif plaid trendi.", ["Plaid Pink", "Abu-abu"], ["XS", "S", "M"],
-            "https://id.pinterest.com/pin/94575660921543707/"), 
+            "https://share.google/PHt5WDZNTqkOLDfke"), 
     # Data 3: Black Tank Top (diganti ke Jogger Pants Pink untuk variasi)
     Product(103, 2, "Jogger Pants Pink", 35.00, "Celana jogger super nyaman.", ["Pink", "Hitam"], ["L", "XL"],
-            "https://i.imgur.com/7b58UoJ.png"), 
+            "https://share.google/YXwrSeOZvTHx8Xcif"), 
     # Data 4: Cropped Cardi
     Product(104, 1, "Cardigan Crop", 20.00, "Cardigan rajut crop untuk OOTD.", ["Pink", "Putih"], ["S", "M"],
-            "https://pin.it/3MkT7bRDy"), 
+            "https://share.google/aIKk08fsJFokOow1X"), 
     # Data 5: Grey Skirt (dibuat mirip dengan produk di gambar)
      Product(105, 2, "Rok Mini Abu", 12.00, "Rok mini kasual warna abu.", ["Abu-abu"], ["XS", "S", "M"],
-            "https://pin.it/7w2SC04Wm"), 
+            "https://share.google/Les5VqE6wD8MLxQZl"), 
 ]
 
 DATA_CATEGORIES = [
