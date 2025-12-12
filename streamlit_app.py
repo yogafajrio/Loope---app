@@ -5,7 +5,7 @@ import random
 import pandas as pd
 import time # Untuk simulasi loading
 
-# --- A. DEFINISI KELAS (Mengacu pada Diagram Class PPT) ---
+# --- A. DEFINISI KELAS 
 
 class User:
     def __init__(self, user_id, name, email, password, address):
